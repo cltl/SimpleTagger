@@ -1,4 +1,4 @@
-# BasicTagger
+# SimpleTagger
 
 This repository provides a basic tagger which identifies strings and lemmas in text and links them to identifiers from a resource.
 
