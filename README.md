@@ -6,8 +6,8 @@ Current version: 0.1
 
 Dependencies:
 
-KafNafParserPy
-Python3
+* KafNafParserPy
+* Python3
 
 Usage:
 
