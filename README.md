@@ -6,8 +6,8 @@ Current version: 0.1
 
 Dependencies:
 
-* KafNafParserPy
-* Python3
+- KafNafParserPy
+- Python3
 
 Usage:
 
@@ -15,9 +15,9 @@ python ontology_tagger_on_naf.py input_directory output_directory [list of resou
 
 Input:
 
-Directory of NAF files with (at least) token and term layer
-Output directory
-At least one resource file providing strings and identifiers
+- Directory of NAF files with (at least) token and term layer
+- Output directory
+- At least one resource file providing strings and identifiers
 
 Output:
 
