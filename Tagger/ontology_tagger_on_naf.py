@@ -1,6 +1,7 @@
 import sys
 import os
 import time
+import copy
 
 from KafNafParserPy import *
 
@@ -80,6 +81,18 @@ def create_next_ids(idlist):
             next_ids.add('t_' + str(number))
     return next_ids
 
+def derive_span(idlist):
+
+    span = set()
+    for cid in idlist:
+        if cid.startswith('w'):
+            number = int(cid.lstrip('w')) - 1
+            span.add('w' + str(number))
+        elif cid.startswith('t_'):
+            number = int(cid.lstrip('t_')) - 1
+            span.add('t_' + str(number))
+    return span
+
 
 def find_longest_match(foundMatches, tok2id, descriptions):
 
@@ -110,7 +123,8 @@ def find_longest_match(foundMatches, tok2id, descriptions):
                     next_ids=set()
                     break
             if match==True:
-                myinfo = [next_ids, val]
+                span = derive_span(next_ids)
+                myinfo = [span, val]
                 if identifier in foundMatches:
                     foundMatches[identifier].append(myinfo)
                 else:
@@ -139,6 +153,7 @@ def create_combined_outcome(nafobj, foundStringMatches, foundTermMatches):
                         mappinps[wId] = [k, val[1]]
                 else:
                     mappings[wId] = [k, val[1]]
+
     return mappings
 
 
@@ -147,7 +162,6 @@ def get_expression_span(following_id, items):
     id_nr = int(following_id.lstrip('w'))
     span_ids = []
     for item in items:
-        id_nr -= 1
         span_ids.insert(0, 'w' + str(id_nr))
     mySpan = Cspan()
     mySpan.create_from_ids(span_ids)
@@ -158,7 +172,7 @@ def get_expression_span(following_id, items):
 def update_naf(mynaf, foundStringMatches, foundTermMatches):
    
     foundItems = create_combined_outcome(mynaf, foundStringMatches, foundTermMatches)
-
+    
     mark_id = 1
     for k, v in foundItems.items():
         hiscoId = v[0]
@@ -167,6 +181,7 @@ def update_naf(mynaf, foundStringMatches, foundTermMatches):
         myMark.set_id('m' + str(mark_id))
         mark_id += 1
         #create and set span
+        #FIXME: pass span up from original match
         span = get_expression_span(k, v[1])
         myMark.set_span(span)
         #create and add external reference
@@ -184,18 +199,24 @@ def update_naf(mynaf, foundStringMatches, foundTermMatches):
 def identify_profession_mentions(mynaf, string_match, lemma_match):
 
     tok2id = get_tok_dictionary(mynaf)
+    
     term2id = get_term_dictionary(mynaf)
+    
     foundStringMatches = {}
     foundTermMatches = {}
+    
     if len(set(tok2id.keys()) & set(string_match.keys())) > 0:
         jointSet = set(tok2id.keys()) & set(string_match.keys())
         for profWord in jointSet:
-            descriptions = string_match.get(profWord)
+            fixed_descriptions = string_match.get(profWord)
+            descriptions = copy.deepcopy(fixed_descriptions)
             find_longest_match(foundStringMatches, tok2id, descriptions)
+
     if len(set(term2id.keys()) & set(lemma_match.keys())) > 0:
         jointSet = set(term2id.keys()) & set(lemma_match.keys())
         for lemma in jointSet:
-            descriptions = lemma_match.get(lemma)
+            fixed_descriptions = lemma_match.get(lemma)
+            descriptions = copy.deepcopy(fixed_descriptions)
             foundTermMatches = find_longest_match(foundTermMatches, term2id, descriptions)
     update_naf(mynaf, foundStringMatches, foundTermMatches)
 
@@ -220,12 +241,12 @@ def tag_strings_from_resource(nafdir, outdir, resource_files):
     for f in resource_files:
         update_match_dictionaries(f, string_match, lemma_match)
 
-    for f in os.listdir(nafdir):
-        if f.endswith('xml') or f.endswith('naf'):
-            mynaf = KafNafParser(nafdir + f)
+    for fn in os.listdir(nafdir):
+        if fn.endswith('xml') or fn.endswith('naf'):
+            mynaf = KafNafParser(nafdir + fn)
             identify_profession_mentions(mynaf, string_match, lemma_match)
             add_header_information(mynaf)
-            mynaf.dump(outdir + f)
+            mynaf.dump(outdir + fn)
 
 def main():
 
